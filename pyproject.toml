@@ -37,6 +37,7 @@ dependencies = [
     "frozendict",
     "cclib~=1.7",
     "attrs",
+    "qcelemental",
     "basis_set_exchange",
     "importlib-metadata>=4.3",
 ]

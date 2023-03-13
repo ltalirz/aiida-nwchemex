@@ -349,3 +349,5 @@ MigrationBackup/
 .ionide/
 
 *.egg-info
+
+*.ipynb_checkpoints/

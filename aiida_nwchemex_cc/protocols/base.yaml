@@ -1,0 +1,22 @@
+default_inputs:
+  common:
+    maxiter: 50
+  SCF:
+    scf_type: restricted
+    tol_int: 1.e-20
+    tol_lindep: 1.e-5
+    conve: 1.e-8
+    convd: 1.e-7
+    diis_hist: 10
+  CD:
+    diagtol: 1.e-6
+  CC:
+    threshold: 1.e-6
+    ccsd_maxiter: 100
+    CCSD(T):
+      ccsdt_tilesize: 40
+
+default_protocol: unrestricted
+protocols:
+  moderate:
+    description: 'Performs calculation at moderate precision'

@@ -2,13 +2,15 @@
 Workflow for nwchem and nwchemex
 """
 # pylint: disable=missing-function-docstring,missing-class-docstring
+import pathlib
 
 from aiida import orm, plugins
 from aiida.engine import WorkChain, append_, while_
 from aiida.engine.processes.exit_code import ExitCode
+from aiida_nwchemex_cc.protocols import ProtocolMixin
 
 
-class NwchemexCCChain(WorkChain):
+class NwchemexCCChain(WorkChain, ProtocolMixin):
     """Run coupled cluster workflow with NWCHEMEX."""
 
     _CALCJOB_CLASS = plugins.CalculationFactory("nwchemex.nwchemexCalc")
@@ -37,6 +39,77 @@ class NwchemexCCChain(WorkChain):
             "results", dynamic=True, help="Collected results of all steps."
         )
         # spec.output("nodeIDs")
+
+    @classmethod
+    def get_protocol_filepath(cls) -> pathlib.Path:
+        """Return the ``pathlib.Path`` to the ``.yaml`` file that defines the protocols."""
+        # pylint: disable=import-outside-toplevel
+        from importlib_resources import files
+        from . import protocols
+
+        return files(protocols) / "base.yaml"
+
+    @classmethod
+    def get_builder_from_protocol(
+        cls,
+        molecule,
+        basis: str,
+        scf_type: str,
+        step_settings: dict,
+        protocol=None,
+        **kwargs,
+    ):
+        """Return a builder prepopulated with inputs selected according to the chosen protocol.
+
+        :param code: the ``Code`` instance configured for the ``quantumespresso.pw`` plugin.
+        :param molecule: the ``qcelemental.models.molecule`` instance to use.
+        :param protocol: protocol to use, if not specified, the default will be used.
+        :param overrides: optional dictionary of inputs to override the defaults of the protocol.
+        :param relax_type: the relax type to use: should be a value of the enum ``common.types.RelaxType``.
+        :param options: A dictionary of options that will be recursively set for the ``metadata.options`` input of all
+            the ``CalcJobs`` that are nested in this work chain.
+        :param kwargs: additional keyword arguments that will be passed to the ``get_builder_from_protocol`` of all the
+            sub processes that are called by this workchain.
+        :return: a process builder instance with all inputs defined ready for launch.
+        """
+        from aiida_nwchemex_cc.utils.nwchemex import (
+            nwchemex_ccsdt_input,
+            prepare_builder,
+            EXECUTABLES,
+        )  # pylint: disable=import-outside-toplevel
+
+        builders = {}
+
+        if len(step_settings) not in [4]:
+            raise NotImplementedError("Expected 4 steps")
+
+        for i_step, executable in enumerate(EXECUTABLES):
+            settings = step_settings[executable]
+            n_nodes, nwchemex_inputs = nwchemex_ccsdt_input(
+                molecule=molecule,
+                basis=basis,
+                scf_type=scf_type,
+                settings=settings,
+                executable=executable,
+            )
+            builder = prepare_builder(
+                settings=settings,
+                n_nodes=n_nodes,
+                executable=executable,
+                code_label=settings["code"],
+            )
+            builder.parameters = orm.Dict(
+                dict=cls.get_protocol_inputs(protocol, nwchemex_inputs)
+            )
+            builder.metadata.options.parser_name = "nwchemex_cc.nwchemex"
+            builders[f"step{i_step+1}"] = builder
+
+        builder = cls.get_builder()
+        builder.steps = builders
+        # builder.label = molecule.get_hash()
+        # builder.description = f"CCSD(T) workflow for molecule {molecule.get_hash()}"
+
+        return builder
 
     def setup(self):
         self.ctx.current_step = 1

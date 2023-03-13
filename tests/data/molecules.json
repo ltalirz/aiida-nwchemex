@@ -1,0 +1,33 @@
+{
+  "h2o": {
+    "schema_version": 2,
+    "schema_name": "qcschema_molecule",
+    "provenance": {
+      "creator": "mctc-lib",
+      "version": "0.3.1",
+      "routine": "mctc_io_write_qcschema::write_qcschema"
+    },
+    "symbols": [
+      "O",
+      "H",
+      "H"
+    ],
+    "atomic_numbers": [
+      8,
+      1,
+      1
+    ],
+    "geometry": [
+      0.0,
+      0.0,
+      0.22259084021904169,
+      0.0,
+      1.4275992700228857,
+      -0.8903652506022913,
+      0.0,
+      -1.4275992700228857,
+      -0.8903652506022913
+    ],
+    "molecular_charge": 0
+  }
+}
